@@ -56,7 +56,7 @@ class Utils:
 
     def createXML(self, csvline):
         self.custom_metadata_name = (re.search('\[(.*)__mdt\]',csvline['_'])).group(1)
-        print('I\'m working on: 'csvline['DeveloperName'])
+        print('I\'m working on: '+csvline['DeveloperName'])
         CustomMetadata = ET.Element('CustomMetadata')
         CustomMetadata.set('xmlns', 'http://soap.sforce.com/2006/04/metadata')
         CustomMetadata.set('xmlns:xsi', 'http://www.w3.org/2001/XMLSchema-instance')
@@ -80,7 +80,7 @@ class Utils:
         finalparsed = reparsed.toprettyxml(indent="    ", encoding = 'UTF-8')
         filename = self.custom_metadata_name + '.'+csvline['DeveloperName']+'.md-meta.xml'
         myfile = open('Result/'+filename, "wb")
-        print('I\'m going to save: 'csvline['DeveloperName'])
+        print('I\'m going to save: '+csvline['DeveloperName'])
         myfile.write(finalparsed)
 
     def definetype(self, fieldname, value):
