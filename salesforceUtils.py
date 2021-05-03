@@ -3,7 +3,6 @@ import json
 import os
 import xml.etree.ElementTree as ET
 from xml.dom import minidom
-import re
 
 standardfields = ['_','Id', 'DeveloperName', 'MasterLabel', 'Language', 'NamespacePrefix', 'Label', 'QualifiedApiName']
 
@@ -14,6 +13,10 @@ class Utils:
         self.domain = domain
         self.createTree()
 
+    def setCustomMetadataName(self, CustomMetadataNameWithoutMdt):
+        self.custom_metadata_name = CustomMetadataNameWithoutMdt
+        self.salesforce_retrieveCustomMetadataDefinition(self.custom_metadata_name+'__mdt')
+
     def salesforce_login(self):
         loginInfo = json.load(open('login.json'))
         username = loginInfo[self.organization]['username']
@@ -22,40 +25,19 @@ class Utils:
         domain = self.domain
         self.session_id, self.instance = SalesforceLogin(username=username, password=password, security_token=security_token, domain=domain)
         self.sf = Salesforce(instance=self.instance, session_id=self.session_id)
+        print('I was able to log in Salesforce')
 
-    def salesforce_retrieveCustomMetadata(self):
-        customMetadata = []
-        metadata_org = self.sf.describe()
-        for element in metadata_org['sobjects']:
-            if element['name'].endswith("__mdt"):
-                customMetadata.append(element['name'])
-
-        for element in customMetadata:
-            sobjectDef = self.retrieve_obj(element)
-            print('Saving '+element+' Sobject Definition')
-            self.saveToMetadataFolder(element,sobjectDef)
-
-    def retrieve_obj(self, objectName):
-        project = SFType(objectName,self.session_id,self.instance)
+    def salesforce_retrieveCustomMetadataDefinition(self, customMetadataName):
+        project = SFType(customMetadataName,self.session_id,self.instance)
         project_metadata = project.describe()
-        return project_metadata.get('fields')
+        self.cmDefinition = project_metadata.get('fields')
+        print('I was able to recover the definition for: '+customMetadataName)
 
     def createTree(self):
-        if not os.path.exists('./Resource'):
-            os.makedirs('./Resource')
-
-        if not os.path.exists('./Resource/'+self.organization):
-            os.makedirs('./Resource/'+self.organization)
-
         if not os.path.exists('./Result'):
             os.makedirs('./Result')
 
-    def saveToMetadataFolder(self, filename, body):
-        with open('./Resource/'+self.organization+'/'+filename+'.json','w',) as outfile:
-            json.dump(body,outfile)
-
     def createXML(self, csvline):
-        self.custom_metadata_name = (re.search('\[(.*)__mdt\]',csvline['_'])).group(1)
         print('I\'m working on: '+csvline['DeveloperName'])
         CustomMetadata = ET.Element('CustomMetadata')
         CustomMetadata.set('xmlns', 'http://soap.sforce.com/2006/04/metadata')
@@ -93,8 +75,7 @@ class Utils:
         return xsitype,xsdvalue
 
     def getType(self, fieldname):
-        file = json.load(open('./Resource/'+self.organization+'/'+self.custom_metadata_name+'__mdt.json'))
-        for field in file:
+        for field in self.cmDefinition:
             if field['name'] == fieldname:
                 soapType = field['soapType']
                 if soapType == 'tns:ID':
