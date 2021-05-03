@@ -8,22 +8,29 @@ standardfields = ['_','Id', 'DeveloperName', 'MasterLabel', 'Language', 'Namespa
 
 class Utils:
 
-    def __init__(self,organization,domain):
-        self.organization = organization
-        self.domain = domain
-        self.createTree()
+    def __init__(self, outputPath):
+        self.outputPath = outputPath
+
+    def inizialize_by_file(self, logininfopath, organization):
+        print(logininfopath)
+        loginInfo = json.load(open(logininfopath))
+        self.username       = loginInfo[organization]['username']
+        self.password       = loginInfo[organization]['password']
+        self.security_token = loginInfo[organization]['security_token']
+        self.domain         = loginInfo[organization]['domain']
+
+    def inizialize_by_value(self,username,password,security_token,domain):
+        self.username       = username
+        self.password       = password
+        self.security_token = security_token
+        self.domain         = domain
 
     def setCustomMetadataName(self, CustomMetadataNameWithoutMdt):
         self.custom_metadata_name = CustomMetadataNameWithoutMdt
         self.salesforce_retrieveCustomMetadataDefinition(self.custom_metadata_name+'__mdt')
 
     def salesforce_login(self):
-        loginInfo = json.load(open('login.json'))
-        username = loginInfo[self.organization]['username']
-        password = loginInfo[self.organization]['password']
-        security_token = loginInfo[self.organization]['security_token']
-        domain = self.domain
-        self.session_id, self.instance = SalesforceLogin(username=username, password=password, security_token=security_token, domain=domain)
+        self.session_id, self.instance = SalesforceLogin(username=self.username, password=self.password, security_token=self.security_token, domain=self.domain)
         self.sf = Salesforce(instance=self.instance, session_id=self.session_id)
         print('I was able to log in Salesforce')
 
@@ -32,10 +39,6 @@ class Utils:
         project_metadata = project.describe()
         self.cmDefinition = project_metadata.get('fields')
         print('I was able to recover the definition for: '+customMetadataName)
-
-    def createTree(self):
-        if not os.path.exists('./Result'):
-            os.makedirs('./Result')
 
     def createXML(self, csvline):
         print('I\'m working on: '+csvline['DeveloperName'])
@@ -61,7 +64,7 @@ class Utils:
         reparsed = minidom.parseString(ET.tostring(CustomMetadata, method='xml'))
         finalparsed = reparsed.toprettyxml(indent="    ", encoding = 'UTF-8')
         filename = self.custom_metadata_name + '.'+csvline['DeveloperName']+'.md-meta.xml'
-        myfile = open('Result/'+filename, "wb")
+        myfile = open(self.outputPath+'/'+filename, "wb")
         print('I\'m going to save: '+csvline['DeveloperName'])
         myfile.write(finalparsed)
 
