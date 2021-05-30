@@ -47,7 +47,7 @@ class Utils:
         CustomMetadata.set('xmlns:xsi', 'http://www.w3.org/2001/XMLSchema-instance')
         CustomMetadata.set('xmlns:xsd', 'http://www.w3.org/2001/XMLSchema')
         label = ET.SubElement(CustomMetadata, 'label')
-        label.text = csvline['Label'] if csvline['Label'] != None else csvline['DeveloperName']
+        label.text = csvline['Label'] if "Label" in csvline else csvline['DeveloperName']
         protected = ET.SubElement(CustomMetadata, 'protected')
         protected.text = 'false'
         
